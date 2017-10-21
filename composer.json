@@ -1,0 +1,16 @@
+{
+    "name": "shipcore-nl/dpddis-api-php",
+    "description": "DPD Integration Services SOAP API PHP Bindings",
+    "type": "library",
+    "version": "0.0.1-dev",
+    "license": "MIT",
+    "require": {
+        "php": "^5.5.0 || ~7.0 || ~7.1",
+        "shipcore-nl/data-object": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "ShipCore\\DPDDis\\": "src/"
+        }
+    }
+}
