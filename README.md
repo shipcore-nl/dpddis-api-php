@@ -10,7 +10,7 @@ PHP Library to use DPD Integration Services as documented on http://diswiki.dpd.
 | Parcel Shop Finder Service                            | N/A                       |
 | Shipment Service                                      | alpha                     |
 | Depot Data Service                                    | N/A                       |
-| Parcel LifeCycle Service                              | N/A                       |
+| Parcel LifeCycle Service                              | alpha                     |
 
 ## Install instructions
 
@@ -40,11 +40,11 @@ if ($newToken) {
     // store this somewhere, and use in next calls as $cachedToken
 }
 
-$storeOrders = \ShipCore\DPDDis\Entity\Shipment\Request\StoreOrders::fromDataArray([
-    'printOptions' => [
+$printOptions = \ShipCore\DPDDis\Entity\Shipment\Request\PrintOptions::fromDataArray([
         'paperFormat' => 'A6'
-    ],
-    'order' => [
+]);
+
+$order = \ShipCore\DPDDis\Entity\Shipment\Request\Order::fromDataArray([
         'generalShipmentData' => [
             'sendingDepot' => '0522',
             'product' => 'CL',
@@ -72,13 +72,13 @@ $storeOrders = \ShipCore\DPDDis\Entity\Shipment\Request\StoreOrders::fromDataArr
         'productAndServiceData' => [
             'orderType' => 'consignment'
         ]
-    ]
 ]);
 
 // Create Label call
-$orderResult = $dpd->storeOrders($storeOrders);
+$orderResult = $dpd->storeOrders($printOptions, $order);
 
-$trackingNumber = $orderResult->getShipmentResponses()
+$trackingNumber = $orderResult
+    ->getShipmentResponses()
     ->getParcelInformation()
     ->getParcelLabelNumber();
 

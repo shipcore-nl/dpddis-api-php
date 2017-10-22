@@ -2,8 +2,10 @@
 namespace ShipCore\DPDDis;
 
 use ShipCore\DPDDis\Entity\Token;
-use ShipCore\DPDDis\Entity\Shipment\Request\StoreOrders;
+use ShipCore\DPDDis\Entity\Shipment\Request\PrintOptions;
+use ShipCore\DPDDis\Entity\Shipment\Request\Order;
 use ShipCore\DPDDis\Entity\Shipment\Response\OrderResult;
+use ShipCore\DPDDis\Entity\Tracking\Response\TrackingResult;
 use ShipCore\DPDDis\Exception\ApiException;
 
 class Api
@@ -174,14 +176,19 @@ class Api
     
     /**
      *
-     * @param StoreOrders $storeOrders
+     * @param PrintOptions $printOptions
+     * @param Order $order
+     *
      * @return OrderResult
      */
-    public function storeOrders(StoreOrders $storeOrders)
+    public function storeOrders(PrintOptions $printOptions, Order $order)
     {
         try {
             $client = $this->getShipmentService();
-            $response = $client->storeOrders($storeOrders->toDataArray());
+            $response = $client->storeOrders([
+                'printOptions' => $printOptions->toDataArray(),
+                'order' => $order->toDataArray()
+                ]);
         
             if (isset($response->orderResult->shipmentResponses->faults)) {
                 throw new ApiException($response->orderResult->shipmentResponses->faults->message, $client);
@@ -193,13 +200,22 @@ class Api
         }
     }
     
-    public function getDepotData($depot, $country, $zipCode)
+    public function getDepotData($depot = null, $zipCode = null, $country = null)
     {
         throw new \Exception('Not implemented');
     }
             
     public function getTrackingData($parcelLabelNumber)
     {
-        throw new \Exception('Not implemented');
+        try {
+            $client = $this->getParcelLifeCycleService();
+            $response = $client->getTrackingData([
+                'parcelLabelNumber' => $parcelLabelNumber,
+                ]);
+            
+            return TrackingResult::fromStdClass($response->TrackingResult);
+        } catch (\SoapFault $e) {
+            throw new ApiException('getTrackingData failed', $client, $e);
+        }
     }
 }
