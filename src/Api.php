@@ -16,7 +16,7 @@ class Api
     
     const SOAPHEADER_NS = 'http://dpd.com/common/service/types/Authentication/2.0';
     
-    const TOKEN_EXPIRATION = 24*60*60 - 60; // 24h - 1min offset
+    const TOKEN_EXPIRATION = 24*60*60; // 24h
     
     protected $delisId;
     protected $password;
@@ -33,7 +33,7 @@ class Api
         $delisId,
         $password,
         $messageLanguage = 'en_EN',
-        $token = null,
+        Token $token = null,
         $staging = false
     ) {
         $this->delisId = $delisId;
@@ -43,12 +43,11 @@ class Api
         $this->staging = $staging;
         
         $this->authenticate();
-        
-        echo "Authenticated\n";
-        echo "customerUid {$this->customerUid}\n";
-        echo "depot {$this->depot}\n";
-        echo "authToken {$this->token->getAuthToken()}\n";
-        echo "authTokenExpiration {$this->token->getAuthTokenExpiration()}\n";
+    }
+    
+    protected function isTokenValid($expirationTime)
+    {
+        return $expirationTime - 30 > time();
     }
     
     protected function getUrl($path)
@@ -58,7 +57,6 @@ class Api
     
     protected function getSoapService($path, $setAuthHeader = true)
     {
-        echo $this->getUrl($path) . "\n";
         $client = new \SoapClient($this->getUrl($path), [
             'cache_wsdl' => WSDL_CACHE_NONE,
             'trace' => 1
@@ -75,7 +73,7 @@ class Api
         
         return $client;
     }
-    
+
     protected function getLoginService()
     {
         return $this->getSoapService(self::LOGIN_SERVICE, false);
@@ -88,6 +86,9 @@ class Api
     
     protected function authenticate()
     {
+        if ($this->token && $this->isTokenValid($this->token->getAuthTokenExpiration())) {
+            return;
+        }
         try {
             $client = $this->getLoginService();
             
@@ -103,15 +104,27 @@ class Api
                 'authToken' => $response->return->authToken,
                 'authTokenExpiration' => time() + self::TOKEN_EXPIRATION
             ]);
+            
+            $this->isTokenChanged = true;
         } catch (\SoapFault $e) {
-            if (isset($client)) {
-                $this->logLastRequest($client);
-            }
-
-            throw $e;
+            throw new ApiException('getAuth failed', $client, $e);
         }
     }
     
+    /**
+     *
+     * @return Token|null
+     */
+    public function getNewToken()
+    {
+        return $this->isTokenChanged ? $this->token : null;
+    }
+    
+    /**
+     *
+     * @param StoreOrders $storeOrders
+     * @return OrderResult
+     */
     public function storeOrders(StoreOrders $storeOrders)
     {
         try {
@@ -124,20 +137,7 @@ class Api
             
             return OrderResult::fromStdClass($response->orderResult);
         } catch (\SoapFault $e) {
-            if (isset($client)) {
-                $this->logLastRequest($client);
-            }
-
-            throw $e;
+            throw new ApiException('storeOrders failed', $client, $e);
         }
-    }
-    
-    protected function logLastRequest(\SoapClient $client)
-    {
-        echo $client->__getLastRequestHeaders();
-        echo $client->__getLastRequest();
-        
-        echo $client->__getLastResponseHeaders();
-        echo $client->__getLastResponse();
     }
 }
