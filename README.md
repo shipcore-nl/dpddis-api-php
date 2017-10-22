@@ -14,16 +14,9 @@ PHP Library to use DPD Integration Services as documented on http://diswiki.dpd.
 
 ## Install instructions
 
-### Within existing Comopser project
-
 ```
 composer require shipcore-nl/dpddis-api-php
 ```
-
-### Standalone
-- Clone this repository
-- Run `composer install`
-- Check out sample scripts located in folder example/ 
 
 ## Example
 
