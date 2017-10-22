@@ -232,7 +232,13 @@ class Api
             throw new ApiException('getDepotData failed', $client, $e);
         }
     }
-            
+     
+    /**
+     *
+     * @param string $parcelLabelNumber
+     *
+     * @return TrackingResult
+     */
     public function getTrackingData($parcelLabelNumber)
     {
         try {

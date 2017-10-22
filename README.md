@@ -78,12 +78,4 @@ $trackingNumber = $orderResult
 $labelBinary = $orderResult->getParcellabelsPDF();
 
 file_put_contents($trackingNumber . '.pdf', $labelBinary);
-
-$newToken = $dpd->getNewToken();
-
-if ($newToken) {
-    // new token generated ($cachedToken was null or expired)
-    // store this somewhere, and use in next calls as $cachedToken
-}
-
 ```
