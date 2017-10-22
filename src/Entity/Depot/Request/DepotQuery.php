@@ -22,7 +22,6 @@ class DepotQuery extends DataObject
     
     /**
      * @Accessible()
-     * @Required()
      * @var string
      */
     protected $country;

@@ -136,6 +136,20 @@ class Api
         return $this->getSoapService(self::PARCELSHOP_LIFECYCLE_SERVICE);
     }
     
+    protected function checkFault($fault, $client)
+    {
+        if (isset($fault->detail->authenticationFault)) {
+            $code = $fault->detail->authenticationFault->errorCode;
+            $message = $fault->detail->authenticationFault->errorMessage;
+        } elseif (isset($fault->detail->faultCodeType)) {
+            $code = $fault->detail->faultCodeType->faultCodeField;
+            $message = $fault->detail->faultCodeType->messageField;
+        } else {
+            throw new ApiException("Unknown Fault", $client, $fault);
+        }
+        throw new ApiException("$code - $message", $client);
+    }
+    
     protected function authenticate()
     {
         if (!$this->isTokenValid()) {
@@ -157,7 +171,7 @@ class Api
 
                 $this->isTokenChanged = true;
             } catch (\SoapFault $e) {
-                throw new ApiException('getAuth failed', $client, $e);
+                $this->checkFault($e, $client);
             }
         }
     }
@@ -185,7 +199,7 @@ class Api
             
             return ParcelShop::fromStdClass($response->parcelShop);
         } catch (\SoapFault $e) {
-            throw new ApiException('findParcelShopsByGeoData failed', $client, $e);
+            $this->checkFault($e, $client);
         }
     }
     
@@ -204,14 +218,10 @@ class Api
                 'printOptions' => $printOptions->toDataArray(),
                 'order' => $order->toDataArray()
                 ]);
-        
-            if (isset($response->orderResult->shipmentResponses->faults)) {
-                throw new ApiException($response->orderResult->shipmentResponses->faults->message, $client);
-            }
             
             return OrderResult::fromStdClass($response->orderResult);
         } catch (\SoapFault $e) {
-            throw new ApiException('storeOrders failed', $client, $e);
+            $this->checkFault($e, $client);
         }
     }
 
@@ -229,7 +239,7 @@ class Api
             
             return DepotData::fromStdClass($response->DepotData);
         } catch (\SoapFault $e) {
-            throw new ApiException('getDepotData failed', $client, $e);
+            $this->checkFault($e, $client);
         }
     }
      
@@ -245,11 +255,11 @@ class Api
             $client = $this->getParcelLifeCycleService();
             $response = $client->getTrackingData([
                 'parcelLabelNumber' => $parcelLabelNumber,
-                ]);
+            ]);
             
             return TrackingResult::fromStdClass($response->TrackingResult);
         } catch (\SoapFault $e) {
-            throw new ApiException('getTrackingData failed', $client, $e);
+            $this->checkFault($e, $client);
         }
     }
 }
