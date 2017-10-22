@@ -10,9 +10,6 @@ class ApiException extends \Exception
     
     public function __construct($message, \SoapClient $client, \Throwable $previous = null)
     {
-        echo $client->__getLastResponseHeaders();
-        echo $client->__getLastResponse();
-        
         $this->client = $client;
         parent::__construct($message, 0, $previous);
     }
