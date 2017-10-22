@@ -13,20 +13,52 @@ class Api
     
     const LOGIN_SERVICE = 'Services/LoginService.svc?singlewsdl';
     const SHIPMENT_SERVICE = 'Services/ShipmentService.svc?singlewsdl';
+    const DEPOTDATA_SERVICE = 'Services/DepotDataService.svc?singlewsdl';
+    const PARCELSHOP_FINDER_SERVICE = 'Services/ParcelShopFinderService.svc?singlewsdl';
+    const PARCELSHOP_LIFECYCLE_SERVICE = 'Services/ParcelLifeCycleService.svc?singlewsdl';
     
     const SOAPHEADER_NS = 'http://dpd.com/common/service/types/Authentication/2.0';
     
     const TOKEN_EXPIRATION = 24*60*60; // 24h
     
+    /**
+     * @var string
+     */
     protected $delisId;
+    
+    /**
+     * @var string
+     */
     protected $password;
+    
+    /**
+     * @var string
+     */
     protected $messageLanguage;
+    
+    /**
+     * @var Token
+     */
     protected $token;
+    
+    /**
+     * @var boolean
+     */
     protected $staging;
     
+    /**
+     * @var boolean
+     */
     protected $isTokenChanged = false;
     
+    /**
+     * @var string
+     */
     protected $customerUid;
+    
+    /**
+     * @var string
+     */
     protected $depot;
     
     public function __construct(
@@ -45,24 +77,25 @@ class Api
         $this->authenticate();
     }
     
-    protected function isTokenValid($expirationTime)
+    protected function isTokenValid()
     {
-        return $expirationTime - 30 > time();
+        return $this->token && ($this->token->getAuthTokenExpiration() - 30 > time());
     }
     
-    protected function getUrl($path)
+    protected function getSoapUrl($path)
     {
         return ($this->staging ? self::BASE_URL_STAGING : self::BASE_URL) . $path;
     }
     
     protected function getSoapService($path, $setAuthHeader = true)
     {
-        $client = new \SoapClient($this->getUrl($path), [
+        $client = new \SoapClient($this->getSoapUrl($path), [
             'cache_wsdl' => WSDL_CACHE_NONE,
             'trace' => 1
         ]);
         
         if ($setAuthHeader) {
+            $this->authenticate(); // refresh token if expired
             $header = new \SoapHeader(self::SOAPHEADER_NS, 'authentication', [
                 'delisId' => $this->delisId,
                 'authToken' => $this->token->getAuthToken(),
@@ -79,35 +112,49 @@ class Api
         return $this->getSoapService(self::LOGIN_SERVICE, false);
     }
     
+    protected function getParcelShopFinderService()
+    {
+        return $this->getSoapService(self::PARCELSHOP_FINDER_SERVICE);
+    }
+    
     protected function getShipmentService()
     {
         return $this->getSoapService(self::SHIPMENT_SERVICE);
     }
     
+    protected function getDepotDataService()
+    {
+        return $this->getSoapService(self::DEPOTDATA_SERVICE);
+    }
+        
+    protected function getParcelLifeCycleService()
+    {
+        return $this->getSoapService(self::PARCELSHOP_LIFECYCLE_SERVICE);
+    }
+    
     protected function authenticate()
     {
-        if ($this->token && $this->isTokenValid($this->token->getAuthTokenExpiration())) {
-            return;
-        }
-        try {
-            $client = $this->getLoginService();
+        if (!$this->isTokenValid()) {
+            try {
+                $client = $this->getLoginService();
             
-            $response = $client->getAuth([
+                $response = $client->getAuth([
                 'delisId' => $this->delisId,
                 'password' => $this->password,
                 'messageLanguage' => $this->messageLanguage
             ]);
         
-            $this->customerUid = $response->return->customerUid;
-            $this->depot = $response->return->depot;
-            $this->token = Token::fromDataArray([
+                $this->customerUid = $response->return->customerUid;
+                $this->depot = $response->return->depot;
+                $this->token = Token::fromDataArray([
                 'authToken' => $response->return->authToken,
                 'authTokenExpiration' => time() + self::TOKEN_EXPIRATION
             ]);
             
-            $this->isTokenChanged = true;
-        } catch (\SoapFault $e) {
-            throw new ApiException('getAuth failed', $client, $e);
+                $this->isTokenChanged = true;
+            } catch (\SoapFault $e) {
+                throw new ApiException('getAuth failed', $client, $e);
+            }
         }
     }
     
@@ -118,6 +165,11 @@ class Api
     public function getNewToken()
     {
         return $this->isTokenChanged ? $this->token : null;
+    }
+    
+    public function findParcelShopsByGeoData($geoData)
+    {
+        throw new \Exception('Not implemented');
     }
     
     /**
@@ -139,5 +191,15 @@ class Api
         } catch (\SoapFault $e) {
             throw new ApiException('storeOrders failed', $client, $e);
         }
+    }
+    
+    public function getDepotData($depot, $country, $zipCode)
+    {
+        throw new \Exception('Not implemented');
+    }
+            
+    public function getTrackingData($parcelLabelNumber)
+    {
+        throw new \Exception('Not implemented');
     }
 }

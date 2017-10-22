@@ -23,10 +23,6 @@ composer require shipcore-nl/dpddis-api-php
 ### Create Shipment Label
 
 ```
-<?php
-
-...
-
 $delisId = 'YOUR_DELIS_ID'
 $password = 'YOUR_PASSWORD';
 $messageLanguage = 'en_EN';
@@ -34,6 +30,7 @@ $staging = true;
 
 $cachedToken = null; // or load from storage 
 
+// API Init
 $dpd = new \ShipCore\DPDDis\Api($delisId, $password, $messageLanguage, $cachedToken, $staging);
 
 $newToken = $dpd->getNewToken();
