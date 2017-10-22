@@ -7,9 +7,9 @@ PHP Library to use DPD Integration Services as documented on http://diswiki.dpd.
 | Service                                               | Status                    |
 | ----------------------------------------------------- | ------------------------- |
 | Login Service                                         | alpha                     |
-| Parcel Shop Finder Service                            | N/A                       |
+| Parcel Shop Finder Service                            | alpha                     |
 | Shipment Service                                      | alpha                     |
-| Depot Data Service                                    | N/A                       |
+| Depot Data Service                                    | alpha                     |
 | Parcel LifeCycle Service                              | alpha                     |
 
 ## Install instructions
@@ -32,13 +32,6 @@ $cachedToken = null; // or load from storage
 
 // API Init
 $dpd = new \ShipCore\DPDDis\Api($delisId, $password, $messageLanguage, $cachedToken, $staging);
-
-$newToken = $dpd->getNewToken();
-
-if ($newToken) {
-    // new token generated ($cachedToken was null or expired)
-    // store this somewhere, and use in next calls as $cachedToken
-}
 
 $printOptions = \ShipCore\DPDDis\Entity\Shipment\Request\PrintOptions::fromDataArray([
         'paperFormat' => 'A6'
@@ -85,5 +78,12 @@ $trackingNumber = $orderResult
 $labelBinary = $orderResult->getParcellabelsPDF();
 
 file_put_contents($trackingNumber . '.pdf', $labelBinary);
+
+$newToken = $dpd->getNewToken();
+
+if ($newToken) {
+    // new token generated ($cachedToken was null or expired)
+    // store this somewhere, and use in next calls as $cachedToken
+}
 
 ```

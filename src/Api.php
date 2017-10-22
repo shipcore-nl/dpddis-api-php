@@ -3,8 +3,12 @@ namespace ShipCore\DPDDis;
 
 use ShipCore\DPDDis\Entity\Token;
 use ShipCore\DPDDis\Entity\Shipment\Request\PrintOptions;
+use ShipCore\DPDDis\Entity\ParcelShop\Request\GeoData;
+use ShipCore\DPDDis\Entity\ParcelShop\Response\ParcelShop;
 use ShipCore\DPDDis\Entity\Shipment\Request\Order;
 use ShipCore\DPDDis\Entity\Shipment\Response\OrderResult;
+use ShipCore\DPDDis\Entity\Depot\Request\DepotQuery;
+use ShipCore\DPDDis\Entity\Depot\Response\DepotData;
 use ShipCore\DPDDis\Entity\Tracking\Response\TrackingResult;
 use ShipCore\DPDDis\Exception\ApiException;
 
@@ -75,8 +79,6 @@ class Api
         $this->messageLanguage = $messageLanguage;
         $this->token = $token;
         $this->staging = $staging;
-        
-        $this->authenticate();
     }
     
     protected function isTokenValid()
@@ -141,18 +143,18 @@ class Api
                 $client = $this->getLoginService();
             
                 $response = $client->getAuth([
-                'delisId' => $this->delisId,
-                'password' => $this->password,
-                'messageLanguage' => $this->messageLanguage
-            ]);
+                    'delisId' => $this->delisId,
+                    'password' => $this->password,
+                    'messageLanguage' => $this->messageLanguage
+                ]);
         
                 $this->customerUid = $response->return->customerUid;
                 $this->depot = $response->return->depot;
                 $this->token = Token::fromDataArray([
-                'authToken' => $response->return->authToken,
-                'authTokenExpiration' => time() + self::TOKEN_EXPIRATION
-            ]);
-            
+                    'authToken' => $response->return->authToken,
+                    'authTokenExpiration' => time() + self::TOKEN_EXPIRATION
+                ]);
+
                 $this->isTokenChanged = true;
             } catch (\SoapFault $e) {
                 throw new ApiException('getAuth failed', $client, $e);
@@ -169,9 +171,22 @@ class Api
         return $this->isTokenChanged ? $this->token : null;
     }
     
-    public function findParcelShopsByGeoData($geoData)
+    /**
+     *
+     * @param GeoData $geoData
+     *
+     * @return ParcelShop
+     */
+    public function findParcelShopsByGeoData(GeoData $geoData)
     {
-        throw new \Exception('Not implemented');
+        try {
+            $client = $this->getParcelShopFinderService();
+            $response = $client->findParcelShopsByGeoData($geoData->toDataArray());
+            
+            return ParcelShop::fromStdClass($response->parcelShop);
+        } catch (\SoapFault $e) {
+            throw new ApiException('findParcelShopsByGeoData failed', $client, $e);
+        }
     }
     
     /**
@@ -199,10 +214,23 @@ class Api
             throw new ApiException('storeOrders failed', $client, $e);
         }
     }
-    
-    public function getDepotData($depot = null, $zipCode = null, $country = null)
+
+    /**
+     *
+     * @param DepotQuery $depotQuery
+     *
+     * @return DepotData
+     */
+    public function getDepotData(DepotQuery $depotQuery)
     {
-        throw new \Exception('Not implemented');
+        try {
+            $client = $this->getDepotDataService();
+            $response = $client->getDepotData($depotQuery->toDataArray());
+            
+            return DepotData::fromStdClass($response->DepotData);
+        } catch (\SoapFault $e) {
+            throw new ApiException('getDepotData failed', $client, $e);
+        }
     }
             
     public function getTrackingData($parcelLabelNumber)
