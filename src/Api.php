@@ -79,11 +79,13 @@ class Api
         $this->messageLanguage = $messageLanguage;
         $this->token = $token;
         $this->staging = $staging;
+        
+        $this->authenticate(); // refresh token if expired
     }
     
     protected function isTokenValid()
     {
-        return $this->token && ($this->token->getAuthTokenExpiration() - 30 > time());
+        return $this->token && ($this->token->getAuthTokenExpiration() - 10*60 > time()); // offset 10 minutes
     }
     
     protected function getSoapUrl($path)
@@ -99,7 +101,6 @@ class Api
         ]);
         
         if ($setAuthHeader) {
-            $this->authenticate(); // refresh token if expired
             $header = new \SoapHeader(self::SOAPHEADER_NS, 'authentication', [
                 'delisId' => $this->delisId,
                 'authToken' => $this->token->getAuthToken(),
