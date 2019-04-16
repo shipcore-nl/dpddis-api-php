@@ -190,15 +190,22 @@ class Api
      *
      * @param GeoData $geoData
      *
-     * @return ParcelShop
+     * @return array
      */
     public function findParcelShopsByGeoData(GeoData $geoData)
     {
         try {
             $client = $this->getParcelShopFinderService();
             $response = $client->findParcelShopsByGeoData($geoData->toDataArray());
-            
-            return ParcelShop::fromStdClass($response->parcelShop);
+
+            $shops = array();
+
+            foreach ($response->parcelShop as $parcelShop) {
+                $shop = ParcelShop::fromStdClass($parcelShop);
+                $shops[] = $shop;
+            }
+
+            return $shops;
         } catch (\SoapFault $e) {
             $this->checkFault($e, $client);
         }
